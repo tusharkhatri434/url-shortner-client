@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Mail, Lock, User, Github, Chrome } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { apiUrl } from "@/lib/utils";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,10 +18,29 @@ const SignUp = () => {
     confirmPassword: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const {login} = useAuth();
+
+  const signUpHndler = (data)=>{
+     const {email,name,token} = data;
+       login({email,name},token);
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     // Handle sign up logic here
     console.log('Sign up attempt:', formData);
+    const {name,email,password} = formData;
+     
+    const newUser = await fetch(`${apiUrl}/api/auth/signup`,{
+          method:'POST',
+          headers:{
+          'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({name,email,password})
+        });
+    const res = await newUser.json();
+    signUpHndler(res);
   };
 
   const handleInputChange = (field: string, value: string) => {

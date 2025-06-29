@@ -5,16 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Mail, Lock, Github, Chrome } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { apiUrl } from "@/lib/utils";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const {login} = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const loginHandler = (data)=>{
+       const {email,name,token} = data;
+       login({email,name},token);
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Handle login logic here
     console.log('Login attempt:', { email, password });
+     
+    const user = await fetch(`${apiUrl}/api/auth/login`,{
+          method:'POST',
+          headers:{
+          'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({email,password})
+        });
+    const res = await user.json();
+    loginHandler(res);
   };
 
   return (

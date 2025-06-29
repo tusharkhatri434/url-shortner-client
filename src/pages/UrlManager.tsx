@@ -1,18 +1,20 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Copy, Trash2, Edit3, Link as LinkIcon, Calendar, MousePointer } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { apiUrl } from "@/lib/utils";
 
 interface UrlData {
-  id: string;
+  _id: string;
   originalUrl: string;
   shortUrl: string;
-  dateCreated: string;
-  clicks: number;
+  createdAt: string;
+  clickCount: number;
+  isActive:boolean
 }
 
 const UrlManager = () => {
@@ -21,31 +23,66 @@ const UrlManager = () => {
   const [editOriginalUrl, setEditOriginalUrl] = useState('');
   const [editShortUrl, setEditShortUrl] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [urls, setUrls] = useState<UrlData[]>([
-    {
-      id: '1',
-      originalUrl: 'https://www.example.com/very-long-url-that-needs-shortening',
-      shortUrl: 'neo.ly/abc123',
-      dateCreated: '2024-01-15',
-      clicks: 1234
-    },
-    {
-      id: '2',
-      originalUrl: 'https://github.com/awesome-project/documentation',
-      shortUrl: 'neo.ly/xyz789',
-      dateCreated: '2024-01-14', 
-      clicks: 856
-    },
-    {
-      id: '3',
-      originalUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      shortUrl: 'neo.ly/def456',
-      dateCreated: '2024-01-13',
-      clicks: 2341
-    }
-  ]);
+  const [urls, setUrls] = useState<UrlData[]>([]);
 
-  const handleShortenUrl = () => {
+  const fetchAllUrls = async ()=>{
+        try {
+          const urls = await fetch(`${apiUrl}/api/urls`,{
+            headers:{
+              'Content-type':'application/json',
+              'authorization':`Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const res = await urls.json();
+          // console.log(res.allUrls);
+          setUrls(res.allUrls);
+        } catch (error) {
+         console.log(error) 
+        }
+  }
+
+  const deleteUrlHandler = async (id:String)=>{
+       try {
+        const url = await fetch(`${apiUrl}/api/urls/${id}`,{
+          method:'DELETE',
+          headers:{
+            'Content-Type': 'application/json',
+            'authorization':`Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const res = await url.json();
+        // console.log(res);
+        fetchAllUrls();
+      } catch (error) {
+        console.log(error)
+      }
+  }
+
+  const editUrlHandler = async(id:string)=>{
+      try {
+        const updatedUrl = await fetch(`${apiUrl}/api/urls/${id}`,{
+          method:'PUT',
+          headers:{
+            'Content-Type': 'application/json',
+            'authorization':`Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({newUrl:editOriginalUrl})
+        });
+        const res = await updatedUrl.json();
+        console.log(res);
+        fetchAllUrls();
+      } catch (error) {
+        console.log(error)
+      }
+  }
+
+  useEffect(()=>{
+    fetchAllUrls();
+  },[]);
+
+  const handleShortenUrl = async () => {
+    console.log(inputUrl);
     if (!inputUrl) {
       toast({
         title: "Error",
@@ -55,16 +92,23 @@ const UrlManager = () => {
       return;
     }
 
-    const newUrl: UrlData = {
-      id: Date.now().toString(),
-      originalUrl: inputUrl,
-      shortUrl: `neo.ly/${Math.random().toString(36).substring(2, 8)}`,
-      dateCreated: new Date().toISOString().split('T')[0],
-      clicks: 0
-    };
+      try {
+        const newUrl = await fetch(`${apiUrl}/api/urls`,{
+          method:'POST',
+          headers:{
+            'Content-Type': 'application/json',
+            'authorization':`Bearer ${localStorage.getItem('token')}`
+          },
+          body:JSON.stringify({originalUrl:inputUrl})
+        });
+        const res : UrlData = await newUrl.json();
+        console.log(res);
 
-    setUrls([newUrl, ...urls]);
-    setInputUrl('');
+          fetchAllUrls();
+          setInputUrl('');
+      } catch (error) {
+        console.log(error)
+      }
     
     toast({
       title: "Success!",
@@ -73,7 +117,7 @@ const UrlManager = () => {
   };
 
   const copyToClipboard = (url: string) => {
-    navigator.clipboard.writeText(`https://${url}`);
+    navigator.clipboard.writeText(`${url}`);
     toast({
       title: "Copied!",
       description: "Short URL copied to clipboard.",
@@ -81,7 +125,7 @@ const UrlManager = () => {
   };
 
   const deleteUrl = (id: string) => {
-    setUrls(urls.filter(url => url.id !== id));
+    deleteUrlHandler(id)
     toast({
       title: "Deleted",
       description: "URL has been removed.",
@@ -106,17 +150,9 @@ const UrlManager = () => {
     }
 
     if (editingUrl) {
-      const updatedUrls = urls.map(url => 
-        url.id === editingUrl.id 
-          ? { 
-              ...url, 
-              originalUrl: editOriginalUrl,
-              shortUrl: `neo.ly/${editShortUrl}`
-            }
-          : url
-      );
-      
-      setUrls(updatedUrls);
+      console.log(editingUrl._id)
+       editUrlHandler(editingUrl._id);
+
       setIsEditDialogOpen(false);
       setEditingUrl(null);
       setEditOriginalUrl('');
@@ -180,7 +216,7 @@ const UrlManager = () => {
           <h2 className="text-2xl font-semibold text-white mb-6">Your Shortened URLs</h2>
           
           {urls.map((url) => (
-            <Card key={url.id} className="card-neon">
+            <Card key={url._id} className="card-neon">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -198,11 +234,11 @@ const UrlManager = () => {
                     <div className="flex items-center space-x-4 text-sm text-gray-400">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{url.dateCreated}</span>
+                        <span>{url.createdAt}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <MousePointer className="w-4 h-4" />
-                        <span>{url.clicks} clicks</span>
+                        <span>{url.clickCount} clicks</span>
                       </div>
                     </div>
                     
@@ -226,7 +262,7 @@ const UrlManager = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => deleteUrl(url.id)}
+                        onClick={() => deleteUrl(url._id)}
                         className="border-gray-600 text-gray-300 hover:border-red-500 hover:text-red-400"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -274,14 +310,15 @@ const UrlManager = () => {
                 <label className="text-sm font-medium text-gray-300">
                   Short URL Code
                 </label>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   <span className="text-gray-400 text-sm">neo.ly/</span>
-                  <Input
+                  {/* <Input
                     value={editShortUrl}
                     onChange={(e) => setEditShortUrl(e.target.value)}
                     placeholder="custom-code"
                     className="input-neon flex-1"
-                  />
+                  /> */}
+                  <p>{editShortUrl}</p>
                 </div>
               </div>
             </div>

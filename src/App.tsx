@@ -14,6 +14,9 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./context/AuthContext";
+import PublicRoute from "./components/PublicRoute";
+import ProtectedRoutes from "./components/ProtectedRoutes";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +37,7 @@ const AppContent = () => {
     // Simulate initial loading
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, []);
@@ -49,10 +52,10 @@ const AppContent = () => {
       <Navbar />
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/manage" element={<UrlManager />} />
+        <Route path="/manage" element={<ProtectedRoutes><UrlManager /></ProtectedRoutes>} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -63,11 +66,13 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AuthProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,12 +1,14 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Link as LinkIcon, BarChart3, Settings, User, Menu, X } from "lucide-react";
+import { Link as LinkIcon, BarChart3, Settings, User, Menu, X, User2 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const {isAuthenticated} = useAuth();
 
   const navItems = [
     { path: "/", label: "Home", icon: LinkIcon },
@@ -46,7 +48,8 @@ const Navbar = () => {
           </div>
 
           {/* Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          {(!isAuthenticated)?
+          (<div className="hidden md:flex items-center space-x-4">
             <Link to="/login">
               <Button variant="ghost" className="text-gray-300 hover:text-white">
                 Login
@@ -55,7 +58,7 @@ const Navbar = () => {
             <Link to="/signup">
               <Button className="btn-neon">Sign Up</Button>
             </Link>
-          </div>
+          </div>):null}
 
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -92,7 +95,7 @@ const Navbar = () => {
                   <span>{item.label}</span>
                 </Link>
               ))}
-              <div className="pt-4 flex flex-col space-y-2">
+              {(!isAuthenticated) ? (<div className="pt-4 flex flex-col space-y-2">
                 <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start text-gray-300">
                     Login
@@ -101,7 +104,7 @@ const Navbar = () => {
                 <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button className="btn-neon w-full">Sign Up</Button>
                 </Link>
-              </div>
+              </div>):null}
             </div>
           </div>
         )}
